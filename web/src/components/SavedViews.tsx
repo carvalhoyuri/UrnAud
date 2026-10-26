@@ -18,7 +18,7 @@ export function SavedViews() {
   }
   return (
     <Popover>
-      <PopoverTrigger className="inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring">
+      <PopoverTrigger aria-label="Visões salvas" className="inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring">
         <Bookmark className="size-3.5" aria-hidden /><span className="hidden sm:inline">Visões</span>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 space-y-2 p-3">

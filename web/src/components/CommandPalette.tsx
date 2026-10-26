@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Building2, MapPin, Vote } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { getJson } from '@/lib/api'
 import { applyParams, setDetail } from '@/lib/filters'
@@ -12,13 +12,6 @@ interface Hit { type: 'mun' | 'local' | 'secao'; label: string; sub: string; par
 export function CommandPalette({ open, setOpen }: { open: boolean; setOpen: (o: boolean) => void }) {
   const [q, setQ] = useState('')
   const dq = useDebounced(q, 200)
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setOpen(!open) }
-    }
-    window.addEventListener('keydown', h)
-    return () => window.removeEventListener('keydown', h)
-  }, [open, setOpen])
   const { data, isFetching } = useQuery({
     queryKey: ['search', dq], enabled: open && dq.length >= 2, staleTime: 60_000,
     queryFn: ({ signal }) => getJson<Hit[]>(`/api/search?q=${encodeURIComponent(dq)}`, signal),

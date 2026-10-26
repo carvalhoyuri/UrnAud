@@ -6,7 +6,7 @@ export function Hint({ text }: { text: string }) {
   return (
     <Tooltip>
       <TooltipTrigger
-        render={<button type="button" aria-label={`Ajuda: ${text}`} className="inline-flex size-4 items-center justify-center rounded text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring" />}
+        render={<button type="button" aria-label={`Ajuda: ${text}`} className="-my-1 inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring" />}
       >
         <Info className="size-3.5" aria-hidden />
       </TooltipTrigger>

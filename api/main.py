@@ -24,7 +24,12 @@ PARQUET = Path(os.environ.get("URNAUD_DATA", ROOT / "data" / "parquet"))
 CACHE_SIZE = int(os.environ.get("URNAUD_CACHE", "512"))
 
 app = FastAPI(title="Urnaud API", docs_url="/api/docs", openapi_url="/api/openapi.json")
-app.add_middleware(GZipMiddleware, minimum_size=800, compresslevel=5)
+try:  # brotli quando disponível (respeita Accept-Encoding); senão, gzip
+    from brotli_asgi import BrotliMiddleware
+
+    app.add_middleware(BrotliMiddleware, quality=4, minimum_size=800, gzip_fallback=True)
+except ImportError:
+    app.add_middleware(GZipMiddleware, minimum_size=800, compresslevel=5)
 
 _con = duckdb.connect(":memory:")
 _tl = threading.local()

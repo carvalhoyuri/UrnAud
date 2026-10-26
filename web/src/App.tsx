@@ -1,8 +1,6 @@
 import { BarChart3, Clock, ExternalLink, GitCompareArrows, Map as MapIcon, Moon, Search, ShieldCheck, SlidersHorizontal, Sun, Table2 } from 'lucide-react'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { ActiveChips } from '@/components/ActiveChips'
-import { CommandPalette } from '@/components/CommandPalette'
-import { Detail } from '@/components/Detail'
 import { FilterPanel } from '@/components/FilterPanel'
 import { SavedViews } from '@/components/SavedViews'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -15,6 +13,8 @@ import { useTheme } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
 import { Overview } from '@/views/Overview'
 
+const CommandPalette = lazy(() => import('@/components/CommandPalette').then((m) => ({ default: m.CommandPalette })))
+const Detail = lazy(() => import('@/components/Detail').then((m) => ({ default: m.Detail })))
 const Mapa = lazy(() => import('@/views/Mapa').then((m) => ({ default: m.Mapa })))
 const Horarios = lazy(() => import('@/views/Horarios').then((m) => ({ default: m.Horarios })))
 const Secoes = lazy(() => import('@/views/Secoes').then((m) => ({ default: m.Secoes })))
@@ -35,6 +35,12 @@ export default function App() {
   const meta = useMeta()
   const [dark, toggleTheme] = useTheme()
   const [searchOpen, setSearchOpen] = useState(false)
+  const [paletteLoaded, setPaletteLoaded] = useState(false)
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPaletteLoaded(true); setSearchOpen(true) } }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [])
   const [filtersOpen, setFiltersOpen] = useState(false)
   const turno = meta.data?.turnoPadrao
 
@@ -58,7 +64,7 @@ export default function App() {
               ))}
             </nav>
             <div className="ml-auto flex items-center gap-1.5">
-              <button type="button" onClick={() => setSearchOpen(true)} className="inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-xs text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring">
+              <button type="button" aria-label="Buscar" onClick={() => setSearchOpen(true)} className="inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-xs text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring">
                 <Search className="size-3.5" aria-hidden /><span className="hidden sm:inline">Buscar</span><kbd className="hidden rounded border px-1 text-[10px] sm:inline">Ctrl K</kbd>
               </button>
               <SavedViews />
@@ -77,11 +83,13 @@ export default function App() {
           </nav>
         </header>
 
-        {turno === 1 && !meta.data?.turnos.includes(2) && (
-          <div role="status" className="border-b bg-amber-50 px-4 py-1.5 text-center text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-            Exibindo o <b>1º turno (04/10/2026)</b>: o Boletim de Urna do 2º turno ainda não foi publicado pelo TSE.
-          </div>
-        )}
+        <div className="min-h-8 border-b">
+          {turno === 1 && !meta.data?.turnos.includes(2) && (
+            <div role="status" className="bg-amber-50 px-4 py-1.5 text-center text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              Exibindo o <b>1º turno (04/10/2026)</b>: o Boletim de Urna do 2º turno ainda não foi publicado pelo TSE.
+            </div>
+          )}
+        </div>
 
         <div className="flex flex-1">
           <aside className="sticky top-12 hidden h-[calc(100vh-3rem)] w-80 shrink-0 overflow-y-auto border-r px-3 py-2 lg:block" aria-label="Painel de filtros">
@@ -90,7 +98,7 @@ export default function App() {
           <main id="conteudo" className="min-w-0 flex-1 space-y-3 px-3 py-4 sm:px-5">
             <div className="flex min-h-7 flex-wrap items-center gap-2">
               <ActiveChips f={f} />
-              {!hasFilters(f) && <p className="text-xs text-muted-foreground">Sem filtros: Brasil inteiro, {meta.data ? meta.data.cargos.find((c) => c.id === f.cargo)?.nome : ''}. Use o painel para recortar até a seção.</p>}
+              {!hasFilters(f) && <p className="text-xs text-muted-foreground">Sem filtros: Brasil inteiro. Use o painel para recortar até a seção.</p>}
             </div>
             <Suspense fallback={<Skeleton className="h-96 w-full" />}>
               {v === 'geral' && <Overview f={f} />}
@@ -119,8 +127,10 @@ export default function App() {
           {hasFilters(f) && <button type="button" onClick={clearAll} className="mx-1 mb-4 mt-2 rounded-md border px-3 py-1.5 text-xs">Limpar tudo</button>}
         </SheetContent>
       </Sheet>
-      <CommandPalette open={searchOpen} setOpen={setSearchOpen} />
-      <Detail id={d} cargo={f.cargo} />
+      <Suspense fallback={null}>
+        {(searchOpen || paletteLoaded) && <CommandPalette open={searchOpen} setOpen={(o) => { setPaletteLoaded(true); setSearchOpen(o) }} />}
+        {d && <Detail id={d} cargo={f.cargo} />}
+      </Suspense>
     </TooltipProvider>
   )
 }

@@ -5,7 +5,7 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
+  resolve: { alias: { '@': path.resolve(import.meta.dirname, 'src') } },
   server: { proxy: { '/api': 'http://127.0.0.1:8000', '/geo': 'http://127.0.0.1:8000' } },
   build: {
     target: 'es2022',

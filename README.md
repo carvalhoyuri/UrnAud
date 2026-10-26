@@ -120,7 +120,7 @@ Todos aceitam os filtros: `cargo`, `uf`, `mun`, `zona`, `secao`, `local` (`UF.mu
 - Exterior: horários tratados como Brasília; não há malha no mapa.
 - Cruzamento TSE↔IBGE por nome: municípios sem par aparecem em branco no mapa (lista impressa por `etl/geo.py`).
 - Facetas de zona agrupam o mesmo número de zona entre UFs quando várias UFs estão no recorte.
-- Brotli não está habilitado (apenas gzip); em produção, ponha um proxy (ex.: o do Easypanel) com brotli à frente.
+- Compressão: brotli (com fallback gzip) na própria API.
 
 ## Licença e uso dos dados
 
