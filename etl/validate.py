@@ -41,7 +41,7 @@ def need(cols, *names):
 def official_munzona(con, turno):
     cache = STAGE / f"oficial_munzona_t{turno}.parquet"
     if not cache.exists():
-        src, f = read(con, "munzona/*.csv")
+        src, f = read(con, "munzona/*BRASIL*.csv")
         cols = {d[0] for d in con.execute(f"SELECT * FROM {src} LIMIT 0").description}
         need(cols, "NR_TURNO", "SG_UF", "DS_CARGO", "NR_CANDIDATO", "NM_CANDIDATO", "QT_VOTOS_NOMINAIS")
         cache.parent.mkdir(parents=True, exist_ok=True)
@@ -54,7 +54,7 @@ def official_munzona(con, turno):
 def official_detalhe(con, turno):
     cache = STAGE / f"oficial_detalhe_t{turno}.parquet"
     if not cache.exists():
-        src, f = read(con, "detalhe_secao/*.csv")
+        src, f = read(con, "detalhe_secao/*BRASIL*.csv")
         cols = {d[0] for d in con.execute(f"SELECT * FROM {src} LIMIT 0").description}
         need(cols, "NR_TURNO", "SG_UF", "DS_CARGO", "QT_COMPARECIMENTO", "QT_VOTOS_BRANCOS", "QT_VOTOS_NULOS", "QT_APTOS")
         con.execute(f"""COPY (SELECT SG_UF AS uf, DS_CARGO AS cargo, sum(TRY_CAST(QT_APTOS AS BIGINT))::BIGINT aptos,

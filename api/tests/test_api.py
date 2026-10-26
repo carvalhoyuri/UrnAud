@@ -57,10 +57,19 @@ def test_detail_404():
     assert client.get("/api/secao/AC/9999/9999").status_code == 404
 
 
-def test_validacao_totais_oficiais():
+def _rel():
     p = DATA / "validacao.json"
     if not p.exists():
         pytest.skip("rode etl/validate.py")
-    rel = json.loads(p.read_text("utf-8"))
-    bad = [l for l in rel["linhas"] if l["dif"] not in (0, None)]
+    return json.loads(p.read_text("utf-8"))
+
+
+def test_validacao_totais_oficiais():
+    """Todo candidato presente nas duas fontes deve ter soma do BU == total oficial do TSE."""
+    bad = [l for l in _rel()["linhas"] if l["oficial"] is not None and l["dif"] != 0]
     assert not bad, f"divergências BU × TSE: {bad[:5]}"
+
+
+@pytest.mark.xfail(reason="Divergência conhecida e NÃO corrigida: candidatos presentes no BU e ausentes no arquivo oficial de votação por zona", strict=False)
+def test_candidatos_ausentes_no_oficial():
+    assert not [l for l in _rel()["linhas"] if l["oficial"] is None]

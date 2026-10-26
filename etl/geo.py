@@ -25,7 +25,12 @@ UF_IBGE = {"RO": 11, "AC": 12, "AM": 13, "RR": 14, "PA": 15, "AP": 16, "TO": 17,
            "RN": 24, "PB": 25, "PE": 26, "AL": 27, "SE": 28, "BA": 29, "MG": 31, "ES": 32, "RJ": 33, "SP": 35,
            "PR": 41, "SC": 42, "RS": 43, "MS": 50, "MT": 51, "GO": 52, "DF": 53}
 # Grafias que diferem entre TSE e IBGE (verificadas manualmente; chave = (UF, nome TSE normalizado))
-ALIASES = {("RN", "assu"): "acu", ("PA", "santa isabel do para"): "santa izabel do para",
+ALIASES = {("RO", "alvorada do oeste"): "alvorada d oeste", ("RO", "espigao do oeste"): "espigao d oeste",
+           ("PA", "eldorado dos carajas"): "eldorado do carajas", ("RN", "boa saude"): "januario cicco",
+           ("SE", "amparo de sao francisco"): "amparo do sao francisco", ("MG", "sao thome das letras"): "sao thome das letras",
+           ("MG", "sao thomé das letras"): "sao thome das letras", ("PR", "munhoz de mello"): "munhoz de melo",
+           ("MT", "santo antonio do leverger"): "santo antonio de leverger", ("GO", "bom jesus"): "bom jesus de goias",
+           ("MG", "dona eusebia"): "dona euzebia",("RN", "assu"): "acu", ("PA", "santa isabel do para"): "santa izabel do para",
            ("SP", "embu"): "embu das artes", ("MG", "brasopolis"): "brazopolis",
            ("PB", "campo de santana"): "tacima", ("RJ", "trajano de morais"): "trajano de moraes",
            ("SP", "sao luis do paraitinga"): "sao luiz do paraitinga", ("PE", "iguaraci"): "iguaracy",
@@ -36,7 +41,7 @@ ALIASES = {("RN", "assu"): "acu", ("PA", "santa isabel do para"): "santa izabel 
 
 def norm(s: str) -> str:
     s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
-    return re.sub(r"[^a-z' ]", " ", s).replace("-", " ").strip()
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z ]", " ", s)).strip()
 
 
 def get(url):
@@ -81,8 +86,10 @@ def main():
             if u != uf:
                 continue
             key = norm(nm)
-            key = norm(ALIASES.get((uf, key), key))
             f = by_name.get(key)
+            if f is None:
+                key = norm(ALIASES.get((uf, key), key))
+                f = by_name.get(key)
             if f is None:
                 unmatched.append((uf, cd, nm))
                 continue

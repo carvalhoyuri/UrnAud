@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import tempfile
 import threading
 import time
@@ -16,6 +17,7 @@ import duckdb
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, Response
+from starlette.background import BackgroundTask
 
 from .filters import CARGOS, ELECTION_DAY, RANGE_EXPR, UFS, Filters, where
 
@@ -357,13 +359,15 @@ def export(request: Request):
     if fmt not in ("csv", "parquet"):
         raise HTTPException(400, "fmt inválido")
     T, w, p, order, _, _c = secoes_query(f, request, False)
-    tmp = Path(tempfile.mkdtemp()) / f"urnaud_secoes.{fmt}"
+    tmpdir = Path(tempfile.mkdtemp())
+    tmp = tmpdir / f"urnaud_secoes.{fmt}"
     opts = "(HEADER, DELIMITER ';')" if fmt == "csv" else "(FORMAT parquet, COMPRESSION zstd)"
     cur().execute(f"""COPY (SELECT s.uf, s.cd_municipio, s.nm_municipio, s.zona, s.secao, l.nome AS local_votacao, l.endereco, l.bairro, l.cep, l.lat, l.lon,
         s.aptos, s.comparecimento, s.abstencoes, s.brancos, s.nulos, s.tipo_urna, s.n_agregadas, s.abertura, s.encerramento, s.emissao_bu, s.bu_recebido,
         s.duracao_min, s.atraso_17h_min, s.transmissao_min, s.abst_pct, s.bn_pct, s.biom_nh_pct, s.venc_nr, s.margem_pp
         FROM {T}secao s LEFT JOIN {T}locais l USING (uf, cd_municipio, zona, nr_local) WHERE {w} ORDER BY {order}) TO '{tmp.as_posix()}' {opts}""", p)
-    return FileResponse(tmp, filename=tmp.name, media_type="text/csv" if fmt == "csv" else "application/octet-stream")
+    return FileResponse(tmp, filename=tmp.name, media_type="text/csv" if fmt == "csv" else "application/octet-stream",
+                        background=BackgroundTask(shutil.rmtree, tmpdir, True))
 
 
 # ---------------------------------------------------------------- detalhe

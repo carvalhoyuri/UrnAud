@@ -76,8 +76,8 @@ def do_extra(name: str, keep_raw: bool):
     zp = fetch(EXTRAS[name], d / f"{name}.zip")
     with zipfile.ZipFile(zp) as z:
         for m in z.namelist():
-            # locais: só o arquivo nacional (os por UF são cópias); demais: tudo
-            if name == "locais" and m.endswith(".csv") and "BRASIL" not in m:
+            # só o arquivo nacional (os por UF são cópias que dobrariam o espaço em disco)
+            if m.endswith(".csv") and "BRASIL" not in m and "_BR.csv" not in m:
                 continue
             z.extract(m, d)
     zp.unlink()

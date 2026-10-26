@@ -8,7 +8,7 @@ from pathlib import Path
 import duckdb
 
 # Valores ausentes no TSE: #NULO#, #NE#, -1, -3
-NULLS = ["#NULO#", "#NE#", "-1", "-3"]
+NULLS = ["#NULO#", "#NE#", "-1", "-3", ""]
 CARGOS = {"Presidente": 1, "Governador": 3}
 
 COLS = {

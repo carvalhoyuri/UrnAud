@@ -68,6 +68,25 @@ Os CSVs do TSE usam `;`, Latin-1 e os nulos `#NULO#`, `#NE#`, `-1`, `-3` (todos 
 cabeçalho e do `leiame` do ZIP; **diferenças em relação ao esperado**: `DS_SECOES_AGREGADAS` (em vez de `DS_AGREGADAS`),
 `QT_ELEI_BIOM_SEM_HABILITACAO` (em vez de `QT_ELEITORES_BIOMETRIA_NH`), e o BU não traz modelo de urna nem indicador de contingência.
 
+## Validação e desempenho (1º turno, base completa: 28 UFs, 499.207 seções)
+
+**Validação** (`python etl/validate.py`, tela “Validação” e `/api/validacao`): a soma das seções do BU por UF × cargo × candidato foi
+comparada ao arquivo oficial *votação por município e zona* do TSE. Resultado:
+- **Todos os candidatos presentes nas duas fontes batem exatamente (diferença 0)**, inclusive o total nacional de Presidente (Flávio Bolsonaro 56.104.503; Lula 53.879.538).
+- **Divergências não corrigidas (37 linhas):** candidatos que existem no BU e **não existem** no arquivo oficial por zona — Presidente nº 28 (Leonardo Avalanche, 5.246 votos) em todas as UFs e alguns candidatos a governador (RN nº 50, SE nº 22 e 45, SP nº 29, TO nº 35, entre outros). Não foi possível determinar a causa a partir dos dados (provável tratamento de candidaturas sub judice na totalização); ficam registradas no relatório e em um teste `xfail`.
+- Conferência cruzada com o *detalhe da votação por seção*: única diferença em `aptos` do Exterior (ZZ, Presidente): BU 916.039 × TSE 916.534 (−495). Comparecimento, brancos e nulos batem em todas as UFs.
+- 5.470 seções (≈1%) sem local correspondente no arquivo de locais (ficam sem nome/endereço); 3 municípios sem par TSE↔IBGE no mapa (São Thomé das Letras e Barão de Monte Alto, MG; Boa Esperança do Norte, MT).
+
+**Desempenho** (máquina de desenvolvimento, Windows, Chrome 1440×900):
+
+| Métrica | Meta | Medido |
+|---|---|---|
+| API, p95 por consulta (60 reqs sem cache, `scripts/bench.py`) | < 300 ms | 6–242 ms (pior: filtro de % de candidato no Brasil inteiro; ex.: resumo nacional 59 ms, mapa por UF 111 ms, histograma 9 ms, página de seções 71 ms) |
+| Rolagem da tabela, 499 mil linhas | 60 fps | ~123–159 fps médios; p95 de frame 11–16 ms |
+| Bundle inicial (gzip) | < 250 KB | ≈ 127 KB (JS 110 + CSS 13 + runtime 3); ECharts e MapLibre em chunks sob demanda |
+| Lighthouse desktop | — | Performance 99 · Acessibilidade 96 · Boas práticas 100 · FCP 0,6 s · LCP 0,8 s · CLS 0,06 |
+| Lighthouse móvel (4G simulado, CPU 4×) | primeira carga < 2 s | Performance 75 · Acessibilidade 100 · Boas práticas 100 · FCP 3,3 s · LCP 3,4 s — **não atinge 2 s nesse perfil**; no desktop atinge |
+
 ## Decisões importantes
 
 - **Fusos.** `DT_ABERTURA`, `DT_ENCERRAMENTO` e `DT_EMISSAO_BU` estão no **fuso local da UF**; `DT_BU_RECEBIDO` está no **horário de Brasília** (verificado: com esse ajuste o BU mais rápido leva ~5 min; sem ele, ~2 h no AC). A votação é uniforme em Brasília (8h–17h), então “17h” = 17h de Brasília convertido ao fuso local (AC 15h; AM, MT, MS, RO, RR 16h). Fernando de Noronha (UTC−2) e o exterior são tratados como Brasília.
