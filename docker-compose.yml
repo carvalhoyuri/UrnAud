@@ -1,0 +1,9 @@
+services:
+  urnaud:
+    build: .
+    ports: ["8000:8000"]
+    volumes:
+      - urnaud-data:/data
+    restart: unless-stopped
+volumes:
+  urnaud-data:

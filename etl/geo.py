@@ -8,6 +8,7 @@ Municípios sem correspondência são listados no final (nunca são "adivinhados
 Uso: python etl/geo.py --turno 1
 """
 import argparse
+import gzip
 import json
 import os
 import re
@@ -29,7 +30,7 @@ ALIASES = {("RN", "assu"): "acu", ("PA", "santa isabel do para"): "santa izabel 
            ("PB", "campo de santana"): "tacima", ("RJ", "trajano de morais"): "trajano de moraes",
            ("SP", "sao luis do paraitinga"): "sao luiz do paraitinga", ("PE", "iguaraci"): "iguaracy",
            ("RS", "santana do livramento"): "sant'ana do livramento", ("MT", "poxoreo"): "poxoreu",
-           ("SC", "grao para"): "grao-para", ("TO", "couto de magalhaes"): "couto magalhaes",
+           ("RR", "sao luiz"): "sao luiz do anaua", ("SC", "grao para"): "grao-para", ("TO", "couto de magalhaes"): "couto magalhaes",
            ("RS", "sao valentim do sul"): "sao valentim do sul", ("PB", "sao domingos de pombal"): "sao domingos"}
 
 
@@ -39,8 +40,12 @@ def norm(s: str) -> str:
 
 
 def get(url):
-    with urllib.request.urlopen(url, timeout=120) as r:
-        return json.load(r)
+    req = urllib.request.Request(url, headers={"Accept-Encoding": "gzip", "User-Agent": "urnaud-etl/1.0"})
+    with urllib.request.urlopen(req, timeout=120) as r:
+        raw = r.read()
+    if raw[:2] == bytes([0x1F, 0x8B]):
+        raw = gzip.decompress(raw)
+    return json.loads(raw)
 
 
 def round_coords(c, p=3):
