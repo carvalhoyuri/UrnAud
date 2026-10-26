@@ -16,7 +16,7 @@ function Histo({ title, field, f, fmt, hint, bins = 48 }: { title: string; field
   const opt = data && {
     grid: { left: 8, right: 8, top: 12, bottom: 4, containLabel: true },
     tooltip: { trigger: 'axis', formatter: (p: { dataIndex: number; value: number }[]) => `${labels[p[0].dataIndex]}<br/><b>${fmtInt(p[0].value)}</b> seções` },
-    xAxis: { type: 'category', data: labels, axisLabel: { interval: Math.floor(bins / 8) } },
+    xAxis: { type: 'category', data: labels, axisLabel: { interval: 'auto', hideOverlap: true } },
     yAxis: { type: 'value', splitLine: { lineStyle: { opacity: 0.25 } }, axisLabel: { formatter: (v: number) => fmtInt(v) } },
     series: [{ type: 'bar', data: data.counts, barCategoryGap: '8%', itemStyle: { color: '#0072B2' } }],
   }
@@ -39,7 +39,7 @@ function Cumulativo({ f }: { f: Filters }) {
   const opt = data && {
     grid: { left: 8, right: 16, top: 12, bottom: 4, containLabel: true },
     tooltip: { trigger: 'axis', formatter: (p: { dataIndex: number }[]) => { const d = data[p[0].dataIndex]; return `${fmtClock(d.min)} (Brasília)<br/><b>${fmtPct(d.pct, 1)}</b> dos BUs · ${fmtInt(d.acum)} seções` } },
-    xAxis: { type: 'category', data: data.map((d) => fmtClock(d.min)), axisLabel: { interval: Math.max(1, Math.floor(data.length / 10)) } },
+    xAxis: { type: 'category', data: data.map((d) => fmtClock(d.min)), axisLabel: { hideOverlap: true } },
     yAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%' }, splitLine: { lineStyle: { opacity: 0.25 } } },
     series: [{ type: 'line', data: data.map((d) => d.pct), showSymbol: false, smooth: false, lineStyle: { width: 2.5, color: '#D55E00' }, areaStyle: { opacity: 0.08, color: '#D55E00' } }],
   }

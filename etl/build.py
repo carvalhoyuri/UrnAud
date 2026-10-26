@@ -6,10 +6,15 @@ Saída em data/parquet/t<turno>/.
 import argparse
 import glob
 import os
+import sys
 import time
 from pathlib import Path
 
 import duckdb
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from etl.stage import CARGOS, COLS, NULLS, stage_csv  # noqa: E402,F401
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = Path(os.environ.get("URNAUD_RAW", ROOT / "data" / "raw"))
@@ -18,22 +23,6 @@ UFS = "AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC S
 # Diferença do fuso local em relação a Brasília (horas). O TSE grava os horários no fuso local da UF.
 # Limitação: Fernando de Noronha (UTC-2) e o exterior (ZZ, vários fusos) são tratados como Brasília.
 TZ_OFFSET = {"AC": -2, "AM": -1, "MT": -1, "MS": -1, "RO": -1, "RR": -1}
-CARGOS = {"Presidente": 1, "Governador": 3}
-NULLS = ["#NULO#", "#NE#", "-1", "-3"]
-
-COLS = {
-    "NR_TURNO": "UTINYINT", "SG_UF": "VARCHAR", "CD_MUNICIPIO": "INTEGER", "NM_MUNICIPIO": "VARCHAR",
-    "NR_ZONA": "USMALLINT", "NR_SECAO": "USMALLINT", "NR_LOCAL_VOTACAO": "INTEGER",
-    "CD_CARGO_PERGUNTA": "UTINYINT", "DS_CARGO_PERGUNTA": "VARCHAR", "SG_PARTIDO": "VARCHAR",
-    "DT_BU_RECEBIDO": "TIMESTAMP", "QT_APTOS": "INTEGER",
-    "QT_COMPARECIMENTO": "INTEGER", "QT_ABSTENCOES": "INTEGER", "CD_TIPO_URNA": "UTINYINT",
-    "DS_TIPO_URNA": "VARCHAR", "DS_TIPO_VOTAVEL": "VARCHAR", "NR_VOTAVEL": "INTEGER",
-    "NM_VOTAVEL": "VARCHAR", "QT_VOTOS": "INTEGER", "NR_URNA_EFETIVADA": "INTEGER",
-    "DS_SECOES_AGREGADAS": "VARCHAR", "DT_ABERTURA": "TIMESTAMP", "DT_ENCERRAMENTO": "TIMESTAMP",
-    "QT_ELEI_BIOM_SEM_HABILITACAO": "INTEGER", "DT_EMISSAO_BU": "TIMESTAMP",
-}
-
-
 def log(*a):
     print(f"[{time.strftime('%H:%M:%S')}]", *a, flush=True)
 
@@ -49,20 +38,20 @@ def main():
     tmp.unlink(missing_ok=True)
     con = duckdb.connect(str(tmp))
     con.execute("SET preserve_insertion_order=false")
-    cols_sql = ", ".join(f"'{k}': '{v}'" for k, v in COLS.items())
-    cargo_list = ",".join(f"'{c}'" for c in CARGOS)
-    nulls = ",".join(f"'{n}'" for n in NULLS)
+    stage_dir = Path(os.environ.get("URNAUD_STAGE", OUT.parent / "stage")) / f"t{a.turno}"
 
-    # 1) staging: uma linha por seção × cargo × votável (somente cargos de interesse)
+    # 1) staging: uma linha por seção × cargo × votável (somente Presidente/Governador), vindo de data/stage/*.parquet
     first = True
     for uf in a.ufs:
-        files = glob.glob(str(RAW / f"bu{a.turno}t" / uf / "*.csv"))
-        if not files:
-            raise SystemExit(f"CSV de {uf} não encontrado - rode etl/download.py")
+        sp = stage_dir / f"{uf}.parquet"
+        if not sp.exists():  # bruto ainda não convertido (download com --keep-raw)
+            files = glob.glob(str(RAW / f"bu{a.turno}t" / uf / "*.csv"))
+            if not files:
+                raise SystemExit(f"Dados de {uf} não encontrados - rode etl/download.py")
+            log("convertendo", uf)
+            stage_csv(Path(files[0]), sp)
         log("lendo", uf)
-        sel = f"""SELECT {', '.join(COLS)} FROM read_csv('{files[0]}', delim=';', encoding='latin-1', header=true,
-                  nullstr=[{nulls}], types={{{cols_sql}}})
-                  WHERE DS_CARGO_PERGUNTA IN ({cargo_list})"""
+        sel = f"SELECT * FROM read_parquet('{sp.as_posix()}')"
         con.execute(("CREATE TABLE raw AS " if first else "INSERT INTO raw ") + sel)
         first = False
     log("linhas staging:", con.execute("select count(*) from raw").fetchone()[0])

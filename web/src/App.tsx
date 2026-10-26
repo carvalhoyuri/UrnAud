@@ -48,7 +48,7 @@ export default function App() {
               <SlidersHorizontal className="size-3.5" aria-hidden />Filtros{hasFilters(f) && <span className="size-1.5 rounded-full bg-primary" />}
             </button>
             <h1 className="text-sm font-semibold tracking-tight">Urnaud</h1>
-            {turno && <span className="rounded-full border px-2 py-0.5 text-[11px] font-medium">{turno}º turno · 2026</span>}
+            {turno && <span className="whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium">{turno}º turno · 2026</span>}
             <nav aria-label="Telas" className="ml-2 hidden gap-0.5 md:flex">
               {TABS.map((t) => (
                 <button key={t.id} type="button" onClick={() => setView(t.id)} aria-current={v === t.id ? 'page' : undefined}

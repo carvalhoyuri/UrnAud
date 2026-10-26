@@ -330,7 +330,7 @@ def secoes(request: Request):
     def compute():
         total = q(f"SELECT count(*) FROM {T}secao s WHERE {w}", p)[0][0]
         vsel = "".join(f", v.v{i}" for i in range(len(cands)))
-        vagg = "".join(f", sum(qt) FILTER (nr=?) v{i}" for i in range(len(cands)))
+        vagg = "".join(f", coalesce(sum(qt) FILTER (nr=?), 0) v{i}" for i in range(len(cands)))
         sql = f"""WITH page AS (
               SELECT s.sid, s.uf, s.nm_municipio municipio, s.zona, s.secao, l.nome local, l.endereco, l.bairro, s.abertura, s.encerramento,
                 s.bu_recebido, s.duracao_min, s.atraso_17h_min atraso, s.transmissao_min transmissao, s.aptos, s.comparecimento, s.abst_pct,
